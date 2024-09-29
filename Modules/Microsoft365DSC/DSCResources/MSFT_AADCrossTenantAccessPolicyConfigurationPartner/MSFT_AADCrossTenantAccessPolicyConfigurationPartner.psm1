@@ -4,6 +4,10 @@ function Get-TargetResource
     [OutputType([System.Collections.Hashtable])]
     param
     (
+        [Parameter(Mandatory = $false)]
+        [System.String]
+        $Id,
+
         [Parameter(Mandatory = $true)]
         [System.String]
         $PartnerTenantId,
@@ -478,7 +482,7 @@ function Export-TargetResource
 
     try
     {
-        [array] $getValue = Get-MgBetaPolicyCrossTenantAccessPolicyPartner -ErrorAction Stop
+        [array] $getValue = Get-MgBetaPolicyCrossTenantAccessPolicyPartner -ErrorAction Stop -All:$true
 
         $i = 1
         $dscContent = ''
@@ -529,7 +533,7 @@ function Export-TargetResource
             {
                 $Results.InboundTrust = Get-M365DSCAADCrossTenantAccessPolicyInboundTrustAsString -Setting $Results.InboundTrust
             }
-
+            $Results.Add('Id', $entry.TenantId)
             $currentDSCBlock = Get-M365DSCExportContentForResource -ResourceName $ResourceName `
                 -ConnectionMode $ConnectionMode `
                 -ModulePath $PSScriptRoot `
@@ -797,7 +801,7 @@ function Get-M365DSCAADCrossTenantAccessPolicyAutomaticUserConsentSettingsAsStri
         {
             $StringContent += "                InboundAllowed           = `$" + $Setting.InboundAllowed.ToString() + "`r`n"
         }
-       if ($null -ne $Setting.OutboundAllowed)
+        if ($null -ne $Setting.OutboundAllowed)
         {
             $StringContent += "                OutboundAllowed          = `$" + $Setting.OutboundAllowed.ToString() + "`r`n"
         }

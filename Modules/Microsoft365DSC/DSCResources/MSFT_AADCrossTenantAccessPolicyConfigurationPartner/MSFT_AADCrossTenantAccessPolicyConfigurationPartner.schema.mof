@@ -38,6 +38,7 @@ class MSFT_AADCrossTenantAccessPolicyInboundTrust
 class MSFT_AADCrossTenantAccessPolicyConfigurationPartner : OMI_BaseResource
 {
     [Key, Description("The tenant identifier for the partner Azure Active Directory (Azure AD) organization.")] String PartnerTenantId;
+    [Key, Description("The tenant identifier for the partner Azure Active Directory (Azure AD) organization.")] String Id;
     [Write, Description("Defines your partner-specific configuration for users from other organizations accessing your resources via Azure AD B2B collaboration."), EmbeddedInstance("MSFT_AADCrossTenantAccessPolicyB2BSetting")] String B2BCollaborationInbound;
     [Write, Description("Defines your partner-specific configuration for users in your organization going outbound to access resources in another organization via Azure AD B2B collaboration."), EmbeddedInstance("MSFT_AADCrossTenantAccessPolicyB2BSetting")] String B2BCollaborationOutbound;
     [Write, Description("Defines your partner-specific configuration for users from other organizations accessing your resources via Azure AD B2B direct connect."), EmbeddedInstance("MSFT_AADCrossTenantAccessPolicyB2BSetting")] String B2BDirectConnectInbound;

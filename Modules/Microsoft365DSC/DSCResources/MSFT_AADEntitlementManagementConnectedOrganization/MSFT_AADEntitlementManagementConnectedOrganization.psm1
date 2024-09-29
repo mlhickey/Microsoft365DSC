@@ -188,7 +188,7 @@ function Get-TargetResource
             {
                 try
                 {
-                    $user = Get-MgUser -UserId $sponsor
+                    $user = Get-MgUser -UserId $sponsor -ErrorAction Stop
                     $ExternalSponsorsValues += $user.UserPrincipalName
                 }
                 catch
@@ -209,7 +209,7 @@ function Get-TargetResource
             {
                 try
                 {
-                    $user = Get-MgUser -UserId $sponsor
+                    $user = Get-MgUser -UserId $sponsor -ErrorAction Stop
                     $InternalSponsorsValues += $user.UserPrincipalName
                 }
                 catch
@@ -226,7 +226,7 @@ function Get-TargetResource
         $results = @{
             Id                    = $getValue.id
             Description           = $getValue.description
-            DisplayName           = $getValue.displayName
+            DisplayName           = $getValue.displayName ?? $getValue.id
             ExternalSponsors      = $ExternalSponsorsValues
             IdentitySources       = $getIdentitySources
             InternalSponsors      = $InternalSponsorsValues
@@ -443,10 +443,10 @@ function Set-TargetResource
         foreach ($sponsor in $ExternalSponsors)
         {
             $directoryObject = Get-MgBetaDirectoryObject -DirectoryObjectId $sponsor
-            $directoryObjectType=$directoryObject.AdditionalProperties."@odata.type"
-            $directoryObjectType=($directoryObject.AdditionalProperties."@odata.type").split(".")|select-object -last 1
-            $directoryObjectRef=@{
-                "@odata.id" = "https://graph.microsoft.com/beta/$($directoryObjectType)s/$($sponsor)"
+            $directoryObjectType = $directoryObject.AdditionalProperties.'@odata.type'
+            $directoryObjectType = ($directoryObject.AdditionalProperties.'@odata.type').split('.') | Select-Object -Last 1
+            $directoryObjectRef = @{
+                '@odata.id' = "https://graph.microsoft.com/beta/$($directoryObjectType)s/$($sponsor)"
             }
 
             New-MgBetaEntitlementManagementConnectedOrganizationExternalSponsorByRef `
@@ -457,9 +457,9 @@ function Set-TargetResource
         foreach ($sponsor in $InternalSponsors)
         {
             $directoryObject = Get-MgBetaDirectoryObject -DirectoryObjectId $sponsor
-            $directoryObjectType=($directoryObject.AdditionalProperties."@odata.type").split(".")|select-object -last 1
-            $directoryObjectRef=@{
-                "@odata.id" = "https://graph.microsoft.com/beta/$($directoryObjectType)s/$($sponsor)"
+            $directoryObjectType = ($directoryObject.AdditionalProperties.'@odata.type').split('.') | Select-Object -Last 1
+            $directoryObjectRef = @{
+                '@odata.id' = "https://graph.microsoft.com/beta/$($directoryObjectType)s/$($sponsor)"
             }
 
             New-MgBetaEntitlementManagementConnectedOrganizationInternalSponsorByRef `
@@ -506,16 +506,16 @@ function Set-TargetResource
             }
             $currentInstance.ExternalSponsors = $currentExternalSponsors
         }
-        $sponsorsDifferences = compare-object -ReferenceObject @($ExternalSponsors|select-object) -DifferenceObject @($currentInstance.ExternalSponsors|select-object)
-        $sponsorsToAdd=($sponsorsDifferences | where-object -filterScript {$_.SideIndicator -eq '<='}).InputObject
-        $sponsorsToRemove=($sponsorsDifferences | where-object -filterScript {$_.SideIndicator -eq '=>'}).InputObject
+        $sponsorsDifferences = Compare-Object -ReferenceObject @($ExternalSponsors | Select-Object) -DifferenceObject @($currentInstance.ExternalSponsors | Select-Object)
+        $sponsorsToAdd = ($sponsorsDifferences | Where-Object -FilterScript { $_.SideIndicator -eq '<=' }).InputObject
+        $sponsorsToRemove = ($sponsorsDifferences | Where-Object -FilterScript { $_.SideIndicator -eq '=>' }).InputObject
         foreach ($sponsor in $sponsorsToAdd)
         {
             $directoryObject = Get-MgBetaDirectoryObject -DirectoryObjectId $sponsor
-            $directoryObjectType=$directoryObject.AdditionalProperties."@odata.type"
-            $directoryObjectType=($directoryObject.AdditionalProperties."@odata.type").split(".")|select-object -last 1
-            $directoryObjectRef=@{
-                "@odata.id" = "https://graph.microsoft.com/beta/$($directoryObjectType)s/$($sponsor)"
+            $directoryObjectType = $directoryObject.AdditionalProperties.'@odata.type'
+            $directoryObjectType = ($directoryObject.AdditionalProperties.'@odata.type').split('.') | Select-Object -Last 1
+            $directoryObjectRef = @{
+                '@odata.id' = "https://graph.microsoft.com/beta/$($directoryObjectType)s/$($sponsor)"
             }
 
             New-MgBetaEntitlementManagementConnectedOrganizationExternalSponsorByRef `
@@ -544,16 +544,16 @@ function Set-TargetResource
             }
             $currentInstance.InternalSponsors = $currentInternalSponsors
         }
-        $sponsorsDifferences = compare-object -ReferenceObject @($InternalSponsors|select-object) -DifferenceObject @($currentInstance.InternalSponsors|select-object)
-        $sponsorsToAdd=($sponsorsDifferences | where-object -filterScript {$_.SideIndicator -eq '<='}).InputObject
-        $sponsorsToRemove=($sponsorsDifferences | where-object -filterScript {$_.SideIndicator -eq '=>'}).InputObject
+        $sponsorsDifferences = Compare-Object -ReferenceObject @($InternalSponsors | Select-Object) -DifferenceObject @($currentInstance.InternalSponsors | Select-Object)
+        $sponsorsToAdd = ($sponsorsDifferences | Where-Object -FilterScript { $_.SideIndicator -eq '<=' }).InputObject
+        $sponsorsToRemove = ($sponsorsDifferences | Where-Object -FilterScript { $_.SideIndicator -eq '=>' }).InputObject
         foreach ($sponsor in $sponsorsToAdd)
         {
             $directoryObject = Get-MgBetaDirectoryObject -DirectoryObjectId $sponsor
-            $directoryObjectType=$directoryObject.AdditionalProperties."@odata.type"
-            $directoryObjectType=($directoryObject.AdditionalProperties."@odata.type").split(".")|select-object -last 1
-            $directoryObjectRef=@{
-                "@odata.id" = "https://graph.microsoft.com/beta/$($directoryObjectType)s/$($sponsor)"
+            $directoryObjectType = $directoryObject.AdditionalProperties.'@odata.type'
+            $directoryObjectType = ($directoryObject.AdditionalProperties.'@odata.type').split('.') | Select-Object -Last 1
+            $directoryObjectRef = @{
+                '@odata.id' = "https://graph.microsoft.com/beta/$($directoryObjectType)s/$($sponsor)"
             }
 
             New-MgBetaEntitlementManagementConnectedOrganizationInternalSponsorByRef `
@@ -794,7 +794,7 @@ function Export-TargetResource
             Write-Host "    |---[$i/$($getValue.Count)] $displayedKey" -NoNewline
             $params = @{
                 id                    = $config.id
-                DisplayName           = $config.displayName
+                DisplayName           = $displayedKey
                 Ensure                = 'Present'
                 Credential            = $Credential
                 ApplicationId         = $ApplicationId

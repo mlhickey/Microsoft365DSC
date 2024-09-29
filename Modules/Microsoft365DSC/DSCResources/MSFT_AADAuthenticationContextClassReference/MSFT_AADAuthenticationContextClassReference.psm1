@@ -6,7 +6,7 @@ function Get-TargetResource
     (
         #region resource generator code
         [Parameter(Mandatory = $true)]
-        [ValidateSet('c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11', 'c12', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18', 'c19', 'c20', 'c21', 'c22', 'c23', 'c24', 'c25')]
+        #[ValidateSet('c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11', 'c12', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18', 'c19', 'c20', 'c21', 'c22', 'c23', 'c24', 'c25')]
         [System.String]
         $Id,
 
@@ -79,8 +79,8 @@ function Get-TargetResource
         $getValue = $null
 
         $getValue = Get-MgBetaIdentityConditionalAccessAuthenticationContextClassReference `
-                        -AuthenticationContextClassReferenceId $Id `
-                        -ErrorAction SilentlyContinue
+            -AuthenticationContextClassReferenceId $Id `
+            -ErrorAction SilentlyContinue
 
         if ($null -eq $getValue)
         {
@@ -370,7 +370,7 @@ function Export-TargetResource
                 $Global:M365DSCExportResourceInstancesCount++
             }
 
-            $displayedKey = $config.Id + " - " + $config.DisplayName
+            $displayedKey = $config.Id + ' - ' + $config.DisplayName
 
             Write-Host "    |---[$i/$($getValue.Count)] $displayedKey" -NoNewline
             $params = @{
