@@ -7,9 +7,9 @@ $Global:SessionSecurityCompliance = $null
 $Global:DefaultComponents = @('SPOApp', 'SPOSiteDesign')
 
 $Global:FullComponents = @('AADGroup', 'AADServicePrincipal', 'ADOSecurityPolicy', 'AzureSubscription','FabricAdminTenantSettings', `
-        'EXOCalendarProcessing', 'EXODistributionGroup', 'EXOMailboxAutoReplyConfiguration', `
+        'DefenderSubscriptionPlan', 'EXOCalendarProcessing', 'EXODistributionGroup', 'EXOMailboxAutoReplyConfiguration', `
         'EXOMailboxPermission','EXOMailboxCalendarFolder','EXOMailboxSettings', 'EXOManagementRole', 'O365Group', 'AADUser', `
-        'PlannerPlan', 'PlannerBucket', 'PlannerTask', 'PPPowerAppsEnvironment', 'PPTenantSettings', `
+        'PlannerPlan', 'PlannerBucket', 'PlannerTask', 'PPPowerAppsEnvironment', 'PPTenantSettings', 'SentinelSetting', 'SentinelWatchlist', `
         'SPOSiteAuditSettings', 'SPOSiteGroup', 'SPOSite', 'SPOUserProfileProperty', 'SPOPropertyBag', 'TeamsTeam', 'TeamsChannel', `
         'TeamsUser', 'TeamsChannelTab', 'TeamsOnlineVoicemailUserSettings', 'TeamsUserCallingSettings', 'TeamsUserPolicyAssignment')
 #endregion
@@ -685,6 +685,16 @@ function Test-M365DSCParameterState
     else
     {
         $KeyList = $ValuesToCheck
+    }
+
+    # Add default Ensure value if it is not present in the DesiredValues but present in the CurrentValues
+    if (-not $KeyList.Contains('Ensure') -and -not $KeyList.Contains('IsSingleInstance') -and $CurrentValues.ContainsKey('Ensure'))
+    {
+        $KeyList += 'Ensure'
+        if (-not $DesiredValues.ContainsKey('Ensure'))
+        {
+            $DesiredValues.Add('Ensure', 'Present')
+        }
     }
 
     $KeyList | ForEach-Object -Process {
@@ -1650,6 +1660,58 @@ function Remove-M365DSCInvalidDependenciesFromSession
 
 <#
 .Description
+This function retrieves the various endpoint urls based on the cloud environment.
+
+.Example
+Get-M365DSCAPIEndpoint -TenantId 'contoso.onmicrosoft.com'
+
+.Functionality
+Private
+#>
+function Get-M365DSCAPIEndpoint
+{
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.String]
+        $TenantId
+    )
+
+    try
+    {
+        $webrequest = Invoke-WebRequest -Uri "https://login.windows.net/$($TenantId)/.well-known/openid-configuration" -UseBasicParsing
+        $response = ConvertFrom-Json $webrequest.Content
+        $tenantRegionScope = $response."tenant_region_scope"
+
+        $endpoints = @{
+            AzureManagement = $null
+        }
+
+        switch ($tenantRegionScope)
+        {
+            'USGov'
+            {
+                if ($null -ne $response.'tenant_region_sub_scope' -and $response.'tenant_region_sub_scope' -eq 'DODCON')
+                {
+                    $endpoints.AzureManagement = "https://management.usgovcloudapi.net"
+                }
+            }
+            default
+            {
+                $endpoints.AzureManagement = "https://management.azure.com"
+            }
+        }
+        return $endpoints
+    }
+    catch
+    {
+        throw $_
+    }
+}
+
+<#
+.Description
 This function gets the onmicrosoft.com name of the tenant
 
 .Functionality
@@ -1777,9 +1839,9 @@ function New-M365DSCConnection
     param
     (
         [Parameter(Mandatory = $true)]
-        [ValidateSet('Azure', 'AzureDevOPS', 'Defender', 'ExchangeOnline', 'Fabric', 'Intune', `
+        [ValidateSet('AdminAPI', 'Azure', 'AzureDevOPS', 'DefenderForEndPoint', 'ExchangeOnline', 'Fabric', 'Intune', `
                 'SecurityComplianceCenter', 'PnP', 'PowerPlatforms', `
-                'MicrosoftTeams', 'MicrosoftGraph', 'SharePointOnlineREST', 'Tasks')]
+                'MicrosoftTeams', 'MicrosoftGraph', 'SharePointOnlineREST', 'Tasks', 'AdminAPI')]
         [System.String]
         $Workload,
 
@@ -3724,13 +3786,13 @@ function Get-M365DSCExportContentForResource
             Import-Module $Resource.Path -Force
             $moduleInfo = Get-Command -Module $ModuleFullName -ErrorAction SilentlyContinue
             $cmdInfo = $moduleInfo | Where-Object -FilterScript {$_.Name -eq 'Get-TargetResource'}
-            $Keys = $cmdInfo.Parameters.Keys
+            $Keys = $cmdInfo.Parameters.Values.Where({ $_.ParameterSets.Values.IsMandatory }).Name
         }
     }
     else
     {
         $cmdInfo = $moduleInfo | Where-Object -FilterScript {$_.Name -eq 'Get-TargetResource'}
-        $Keys = $cmdInfo.Parameters.Keys
+        $Keys = $cmdInfo.Parameters.Values.Where({ $_.ParameterSets.Values.IsMandatory }).Name
     }
 
     if ($Keys.Contains('IsSingleInstance'))
@@ -3768,6 +3830,14 @@ function Get-M365DSCExportContentForResource
     elseif ($Keys.Contains('OrganizationName'))
     {
         $primaryKey = $Results.OrganizationName
+    }
+    elseif ($Keys.Contains('DomainName'))
+    {
+        $primaryKey = $Results.DomainName
+    }
+    elseif ($Keys.Contains('UserPrincipalName'))
+    {
+        $primaryKey = $Results.UserPrincipalName
     }
 
     if ([String]::IsNullOrEmpty($primaryKey) -and `
@@ -4616,7 +4686,7 @@ function Test-M365DSCModuleValidity
     [CmdletBinding()]
     param()
 
-    if ('AzureAutomation/' -eq $env:AZUREPS_HOST_ENVIRONMENT)
+    if ($env:AZUREPS_HOST_ENVIRONMENT -like 'AzureAutomation*')
     {
         $message = 'Skipping check for newer version of Microsoft365DSC due to Azure Automation Environment restrictions.'
         Write-Verbose -Message $message
@@ -5099,6 +5169,7 @@ Export-ModuleMember -Function @(
     'Export-M365DSCConfiguration',
     'Get-AllSPOPackages',
     'Get-M365DSCAllResources',
+    'Get-M365DSCAPIEndpoint'
     'Get-M365DSCAuthenticationMode',
     'Get-M365DSCComponentsForAuthenticationType',
     'Get-M365DSCComponentsWithMostSecureAuthenticationType',

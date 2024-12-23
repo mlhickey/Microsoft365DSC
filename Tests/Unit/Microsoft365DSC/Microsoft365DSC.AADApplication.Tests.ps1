@@ -90,14 +90,14 @@ Describe -Name $Global:DscHelper.DescribeHeader -Fixture {
                     Credential                = $Credential
                 }
 
-                Mock -CommandName Get-MgApplication -MockWith {
+                Mock -CommandName Get-MgBetaApplication -MockWith {
                     return $null
                 }
             }
 
             It 'Should return values from the get method' {
                 (Get-TargetResource @testParams).Ensure | Should -Be 'Absent'
-                Should -Invoke -CommandName 'Get-MgApplication' -Exactly 1
+                Should -Invoke -CommandName 'Get-MgBetaApplication' -Exactly 1
             }
             It 'Should return false from the test method' {
                 Test-TargetResource @testParams | Should -Be $false
@@ -126,7 +126,7 @@ Describe -Name $Global:DscHelper.DescribeHeader -Fixture {
                     Credential                = $Credential
                 }
 
-                Mock -CommandName Get-MgApplication -MockWith {
+                Mock -CommandName Get-MgBetaApplication -MockWith {
                     $AADApp = New-Object PSCustomObject
                     $AADApp | Add-Member -MemberType NoteProperty -Name DisplayName -Value 'App1'
                     $AADApp | Add-Member -MemberType NoteProperty -Name Id -Value '5dcb2237-c61b-4258-9c85-eae2aaeba9d6'
@@ -147,7 +147,7 @@ Describe -Name $Global:DscHelper.DescribeHeader -Fixture {
 
             It 'Should return values from the get method' {
                 (Get-TargetResource @testParams).Ensure | Should -Be 'Present'
-                Should -Invoke -CommandName 'Get-MgApplication' -Exactly 2
+                Should -Invoke -CommandName 'Get-MgBetaApplication' -Exactly 3
             }
 
             It 'Should return false from the test method' {
@@ -212,6 +212,30 @@ Describe -Name $Global:DscHelper.DescribeHeader -Fixture {
                             DisplayName = 'anexas_test_2'
                         } -ClientOnly
                     )
+                    OptionalClaims = New-CimInstance -ClassName MSFT_MicrosoftGraphoptionalClaims -Property @{
+                        Saml2Token = [CimInstance[]]@(
+                            New-CimInstance -ClassName MSFT_MicrosoftGraphOptionalClaim -Property @{
+                                Name = 'groups'
+                                Essential = $False
+                            } -ClientOnly
+                        )
+                        AccessToken = [CimInstance[]]@(
+                            New-CimInstance -ClassName MSFT_MicrosoftGraphOptionalClaim -Property @{
+                                Name = 'groups'
+                                Essential = $False
+                            } -ClientOnly
+                        )
+                        IdToken = [CimInstance[]]@(
+                            New-CimInstance -ClassName MSFT_MicrosoftGraphOptionalClaim -Property @{
+                                Name = 'acrs'
+                                Essential = $False
+                            } -ClientOnly
+                            New-CimInstance -ClassName MSFT_MicrosoftGraphOptionalClaim -Property @{
+                                Name = 'groups'
+                                Essential = $False
+                            } -ClientOnly
+                        )
+                    } -ClientOnly
                     AuthenticationBehaviors   = New-CimInstance -ClassName MSFT_MicrosoftGraphAuthenticationBehaviors -Property @{
                              blockAzureADGraphAccess       = $false
                              removeUnverifiedEmailClaim    = $true
@@ -224,31 +248,42 @@ Describe -Name $Global:DscHelper.DescribeHeader -Fixture {
                                 PermissionIds = @('12345-12345-12345-12345-12345')
                             } -ClientOnly
                         )
-                        
+
                     } -ClientOnly
                     Ensure                    = 'Present'
                     Credential                = $Credential
                 }
-
                 Mock -CommandName Get-MgBetaApplication -MockWith {
-                    $AADApp = New-Object PSCustomObject
-                    $AADApp | Add-Member -MemberType NoteProperty -Name DisplayName -Value 'App1'
-                    $AADApp | Add-Member -MemberType NoteProperty -Name Id -Value '5dcb2237-c61b-4258-9c85-eae2aaeba9d6'
-                    $AADApp | Add-Member -MemberType NoteProperty -Name AppId -Value '5dcb2237-c61b-4258-9c85-eae2aaeba9d6'
-                    $AADApp | Add-Member -MemberType NoteProperty -Name AuthenticationBehaviors -Value @{
-                         blockAzureADGraphAccess       = $false
-                         removeUnverifiedEmailClaim    = $true
-                         requireClientServicePrincipal = $false
-                    }
-                    return $AADApp
-                }
-                Mock -CommandName Get-MgApplication -MockWith {
                     $AADApp = New-Object PSCustomObject
                     $AADApp | Add-Member -MemberType NoteProperty -Name DisplayName -Value 'App1'
                     $AADApp | Add-Member -MemberType NoteProperty -Name Id -Value '5dcb2237-c61b-4258-9c85-eae2aaeba9d6'
                     $AADApp | Add-Member -MemberType NoteProperty -Name Description -Value 'App description'
                     $AADApp | Add-Member -MemberType NoteProperty -Name GroupMembershipClaims -Value 0
                     $AADApp | Add-Member -MemberType NoteProperty -Name SignInAudience -Value 'AzureADMyOrg'
+                    $AADApp | Add-Member -MemberType NoteProperty -Name OptionalClaims -Value @{
+                            Saml2Token = @(
+                                @{
+                                    Name = 'groups'
+                                    Essential = $False
+                                }
+                            )
+                            AccessToken = @(
+                                @{
+                                    Name = 'groups'
+                                    Essential = $False
+                                }
+                            )
+                            IdToken = @(
+                                @{
+                                    Name = 'acrs'
+                                    Essential = $False
+                                }
+                                @{
+                                    Name = 'groups'
+                                    Essential = $False
+                                }
+                            )
+                    }
                     $AADApp | Add-Member -MemberType NoteProperty -Name Web -Value @{
                         HomepageUrl  = 'https://app.contoso.com'
                         LogoutURL    = 'https://app.contoso.com/logout'
@@ -301,13 +336,18 @@ Describe -Name $Global:DscHelper.DescribeHeader -Fixture {
                     $AADApp | Add-Member -MemberType NoteProperty -Name IdentifierUris -Value 'https://app.contoso.com'
                     $AADApp | Add-Member -MemberType NoteProperty -Name Oauth2RequirePostResponse -Value $false
                     $AADApp | Add-Member -MemberType NoteProperty -Name PublicClient -Value $false
+                    $AADApp | Add-Member -MemberType NoteProperty -Name AuthenticationBehaviors -Value @{
+                         blockAzureADGraphAccess       = $false
+                         removeUnverifiedEmailClaim    = $true
+                         requireClientServicePrincipal = $false
+                    }
                     return $AADApp
                 }
             }
 
             It 'Should return Values from the get method' {
                 Get-TargetResource @testParams
-                Should -Invoke -CommandName 'Get-MgApplication' -Exactly 2
+                Should -Invoke -CommandName 'Get-MgBetaApplication' -Exactly 3
             }
 
             It 'Should return true from the test method' {
@@ -332,7 +372,7 @@ Describe -Name $Global:DscHelper.DescribeHeader -Fixture {
                     Credential                = $Credential
                 }
 
-                Mock -CommandName Get-MgApplication -MockWith {
+                Mock -CommandName Get-MgBetaApplication -MockWith {
                     $AADApp = New-Object PSCustomObject
                     $AADApp | Add-Member -MemberType NoteProperty -Name DisplayName -Value 'App1'
                     $AADApp | Add-Member -MemberType NoteProperty -Name Id -Value '5dcb2237-c61b-4258-9c85-eae2aaeba9d6'
@@ -352,7 +392,7 @@ Describe -Name $Global:DscHelper.DescribeHeader -Fixture {
 
             It 'Should return values from the get method' {
                 Get-TargetResource @testParams
-                Should -Invoke -CommandName 'Get-MgApplication' -Exactly 2
+                Should -Invoke -CommandName 'Get-MgBetaApplication' -Exactly 3
             }
 
             It 'Should return false from the test method' {
@@ -386,28 +426,20 @@ Describe -Name $Global:DscHelper.DescribeHeader -Fixture {
                     Credential              = $Credential
                 }
 
-                Mock -CommandName Get-MgApplication -MockWith {
-                    return $null
-                }
-
                 Mock -CommandName Get-MgBetaApplication -MockWith {
-                    return @{
-                        id = '12345-12345-12345-12345-12345'
-                        appId = '12345-12345-12345-12345-12345'
-                        DisplayName               = 'App1'
-                        AuthenticationBehaviours = @{
-                            blockAzureADGraphAccess       = $false
-                            removeUnverifiedEmailClaim    = $true
-                            requireClientServicePrincipal = $false
+                    return @(
+                        @{
+                            id = '12345-12345-12345-12345-12345'
+                            appId = '12345-12345-12345-12345-12345'
+                            DisplayName               = 'App1'
                         }
-                        
-                    }
+                    )
                 }
             }
 
             It 'Should return values from the get method' {
                 Get-TargetResource @testParams
-                Should -Invoke -CommandName 'Get-MgApplication' -Exactly 1
+                Should -Invoke -CommandName 'Get-MgBetaApplication' -Exactly 3
             }
 
             It 'Should return false from the test method' {
@@ -416,7 +448,6 @@ Describe -Name $Global:DscHelper.DescribeHeader -Fixture {
 
             It 'Should call the new method' {
                 Set-TargetResource @testParams
-                Should -Invoke -CommandName 'New-MgApplication' -Exactly 1
                 Should -Invoke -CommandName 'Update-MgBetaApplication' -Exactly 1
             }
 
@@ -457,14 +488,14 @@ Describe -Name $Global:DscHelper.DescribeHeader -Fixture {
                     Credential              = $Credential
                 }
 
-                Mock -CommandName Get-MgApplication -MockWith {
+                Mock -CommandName Get-MgBetaApplication -MockWith {
                     return $null
                 }
             }
 
             It 'Should return values from the get method' {
                 Get-TargetResource @testParams
-                Should -Invoke -CommandName 'Get-MgApplication' -Exactly 1
+                Should -Invoke -CommandName 'Get-MgBetaApplication' -Exactly 1
             }
 
             It 'Should return false from the test method' {
@@ -485,7 +516,7 @@ Describe -Name $Global:DscHelper.DescribeHeader -Fixture {
                     Credential = $Credential
                 }
 
-                Mock -CommandName Get-MgApplication -MockWith {
+                Mock -CommandName Get-MgBetaApplication -MockWith {
                     $AADApp = New-Object PSCustomObject
                     $AADApp | Add-Member -MemberType NoteProperty -Name DisplayName -Value 'App1'
                     $AADApp | Add-Member -MemberType NoteProperty -Name Id -Value '5dcb2237-c61b-4258-9c85-eae2aaeba9d6'
