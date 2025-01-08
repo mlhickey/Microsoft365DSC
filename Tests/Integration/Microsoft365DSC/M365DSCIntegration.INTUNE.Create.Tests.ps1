@@ -2411,7 +2411,7 @@
                     TenantId              = $TenantId;
                     CertificateThumbprint = $CertificateThumbprint;
                 }
-                IntuneDeviceManagmentAndroidDeviceOwnerEnrollmentProfile 'IntuneDeviceManagmentAndroidDeviceOwnerEnrollmentProfile-MyTestEnrollmentProfile'
+                IntuneDeviceManagementAndroidDeviceOwnerEnrollmentProfile 'IntuneDeviceManagementAndroidDeviceOwnerEnrollmentProfile-MyTestEnrollmentProfile'
                 {
                     AccountId                 = "8d2ac1fd-0ac9-4047-af2f-f1e6323c9a34e";
                     ApplicationId             = $ApplicationId;
@@ -2834,28 +2834,6 @@
                     TenantId              = $TenantId;
                     CertificateThumbprint = $CertificateThumbprint;
                 }
-                IntuneMobileAppConfigurationPolicyIOS 'ConfigureIntuneMobileAppConfigurationPolicyIOS'
-                {
-                    Description           = "IntuneMobileAppConfigurationPolicyIOS Description";
-                    DisplayName           = "IntuneMobileAppConfigurationPolicyIOS DisplayName";
-                    Ensure                = "Present";
-                    settings              = @(
-                        MSFT_appConfigurationSettingItem{
-                            appConfigKey = 'ConfigKey1'
-                            appConfigKeyType = 'stringType'
-                            appConfigKeyValue = 'KeyValue1'
-                        }
-                        MSFT_appConfigurationSettingItem{
-                            appConfigKey = 'ConfigKey2'
-                            appConfigKeyType = 'stringType'
-                            appConfigKeyValue = 'keyValue2'
-                        }
-                    );
-                    targetedMobileApps    = @("06131066-8adf-42a9-86aa-e4b59e27da5d");
-                    ApplicationId         = $ApplicationId;
-                    TenantId              = $TenantId;
-                    CertificateThumbprint = $CertificateThumbprint;
-                }
                 IntuneMobileAppsMacOSLobApp 'IntuneMobileAppsMacOSLobApp-TeamsForBusinessInstaller'
                 {
                     Id                    = "8d027f94-0682-431e-97c1-827d1879fa79";
@@ -3077,6 +3055,31 @@
                     TenantId              = $TenantId;
                     CertificateThumbprint = $CertificateThumbprint;
                 }
+                IntuneSecurityBaselineWindows10 'mySecurityBaselineWindows10'
+                {
+                    DisplayName           = 'test'
+                    DeviceSettings = MSFT_MicrosoftGraphIntuneSettingsCatalogDeviceSettings_IntuneSecurityBaselineWindows10
+                    {
+                        Pol_MSS_DisableIPSourceRoutingIPv6 = '1'
+                        DisableIPSourceRoutingIPv6 = '0'
+                        BlockExecutionOfPotentiallyObfuscatedScripts = 'block'                             
+                        HardenedUNCPaths_Pol_HardenedPaths = '1'
+                        pol_hardenedPaths = @(
+                            MSFT_MicrosoftGraphIntuneSettingsCatalogpol_hardenedpaths{
+                                Key = '\\*\SYSVOL'
+                                Value = 'RequireMutualAuthentication=1,RequireIntegrity=1'
+                            }
+                        )
+                    }
+                    UserSettings = MSFT_MicrosoftGraphIntuneSettingsCatalogUserSettings_IntuneSecurityBaselineWindows10
+                    {
+                        AllowWindowsSpotlight = '1'
+                    }
+                    Ensure                = 'Present'
+                    ApplicationId         = $ApplicationId;
+                    TenantId              = $TenantId;
+                    CertificateThumbprint = $CertificateThumbprint;
+                }
                 IntuneSettingCatalogASRRulesPolicyWindows10 'myASRRulesPolicy'
                 {
                     DisplayName                                                                = 'asr 2'
@@ -3167,6 +3170,145 @@
                     ApplicationId         = $ApplicationId;
                     TenantId              = $TenantId;
                     CertificateThumbprint = $CertificateThumbprint;
+                }
+                IntuneTrustedRootCertificateAndroidDeviceOwner 'ConfigureIntuneTrustedRootCertificateAndroidDeviceOwner'
+                {
+                    Description            = "IntuneTrustedRootCertificateAndroidDeviceOwner Description";
+                    DisplayName            = "IntuneTrustedRootCertificateAndroidDeviceOwner DisplayName";
+                    Ensure                 = "Present";
+                    certFileName           = "fakename.cer";
+                    trustedRootCertificate = "insertValidBase64StringHere";
+                    ApplicationId          = $ApplicationId;
+                    TenantId               = $TenantId;
+                    CertificateThumbprint  = $CertificateThumbprint;
+                }
+                IntuneTrustedRootCertificateAndroidEnterprise 'ConfigureIntuneTrustedRootCertificateAndroidEnterprise'
+                {
+                    Description            = "IntuneTrustedRootCertificateAndroidEnterprise Description";
+                    DisplayName            = "IntuneTrustedRootCertificateAndroidEnterprise DisplayName";
+                    Ensure                 = "Present";
+                    certFileName           = "fakename.cer";
+                    trustedRootCertificate = "insertValidBase64StringHere";
+                    ApplicationId          = $ApplicationId;
+                    TenantId               = $TenantId;
+                    CertificateThumbprint  = $CertificateThumbprint;
+                }
+                IntuneTrustedRootCertificateIOS 'ConfigureIntuneTrustedRootCertificateIOS'
+                {
+                    Description            = "IntuneTrustedRootCertificateIOS Description";
+                    DisplayName            = "IntuneTrustedRootCertificateIOS DisplayName";
+                    Ensure                 = "Present";
+                    certFileName           = "fakename.cer";
+                    trustedRootCertificate = "insertValidBase64StringHere";
+                    ApplicationId          = $ApplicationId;
+                    TenantId               = $TenantId;
+                    CertificateThumbprint  = $CertificateThumbprint;
+                }
+                IntuneVPNConfigurationPolicyAndroidDeviceOwner 'IntuneVPNConfigurationPolicyAndroidDeviceOwner-Example'
+                {
+                    ApplicationId                           = $ApplicationId;
+                    TenantId                                = $TenantId;
+                    CertificateThumbprint                   = $CertificateThumbprint;
+                    Assignments                             = @();
+                    alwaysOn                                = $False;
+                    authenticationMethod                    = "azureAD";
+                    connectionName                          = "IntuneVPNConfigurationPolicyAndroidDeviceOwner ConnectionName";
+                    connectionType                          = "microsoftProtect";
+                    Description                             = "IntuneVPNConfigurationPolicyAndroidDeviceOwner Description";
+                    DisplayName                             = "IntuneVPNConfigurationPolicyAndroidDeviceOwner DisplayName";
+                    Ensure                                  = "Present";
+                    Id                                      = "12345678-1234-abcd-1234-12345678ABCD";
+                    customData                              = @(
+                        MSFT_CustomData{
+                            key                             = 'fakeCustomData'
+                            value                           = '[{"key":"fakestring1","type":"int","value":"1"},{"type":"int","key":"fakestring2","value":"0"}]'
+                        }
+                    );
+                    customKeyValueData                      = @(
+                        MSFT_customKeyValueData{
+                            value                           = '[{"key":"fakestring1","type":"int","value":"1"},{"type":"int","key":"fakestring2","value":"0"}]'
+                            name                            = 'fakeCustomKeyValueData'
+                        }
+                    );
+                    microsoftTunnelSiteId                   = "12345678-1234-abcd-1234-12345678ABCD";
+                    proxyExclusionList                      = @();
+                    proxyServer                             = @(
+                        MSFT_MicrosoftvpnProxyServer{
+                            port                            = 8080
+                            automaticConfigurationScriptUrl = 'fakestringvalue'
+                            address                         = 'fake-proxy-adress.com'
+                        }
+                    );
+                    servers                                 = @(
+                        MSFT_MicrosoftGraphvpnServer{
+                            isDefaultServer                 = $True
+                            description                     = 'fakestringvalue'
+                            address                         = 'fake.server.com:8080'
+                        }
+                    );
+                    targetedMobileApps                      = @(
+                        MSFT_targetedMobileApps{
+                            name                            = 'fakestringvalue'
+                            publisher                       = 'Fake Corporation'
+                            appId                           = 'com.fake.emmx'
+                        }
+                    );
+                }
+                IntuneVPNConfigurationPolicyAndroidEnterprise 'IntuneVPNConfigurationPolicyAndroidEnterprise-Example'
+                {
+                    ApplicationId                      = $ApplicationId;
+                    TenantId                           = $TenantId;
+                    CertificateThumbprint              = $CertificateThumbprint;
+                    Assignments                        = @();
+                    authenticationMethod               = "usernameAndPassword";
+                    connectionName                     = "IntuneVPNConfigurationPolicyAndroidEnterprise ConnectionName";
+                    connectionType                     = "ciscoAnyConnect";
+                    Description                        = "IntuneVPNConfigurationPolicyAndroidEnterprise Description";
+                    DisplayName                        = "IntuneVPNConfigurationPolicyAndroidEnterprise DisplayName";
+                    Ensure                             = "Present";
+                    Id                                 = "12345678-1234-abcd-1234-12345678ABCD";
+                    servers                            = @(
+                        MSFT_MicrosoftGraphvpnServer{
+                            isDefaultServer            = $True
+                            description                = 'server'
+                            address                    = 'vpn.test.com'
+                        }
+                    );
+                }
+                IntuneVPNConfigurationPolicyIOS 'IntuneVPNConfigurationPolicyIOS-Example'
+                {
+                    ApplicationId         = $ApplicationId;
+                    TenantId              = $TenantId;
+                    CertificateThumbprint = $CertificateThumbprint;
+                    Assignments            = @();
+                    associatedDomains      = @();
+                    authenticationMethod   = "usernameAndPassword";
+                    connectionName         = "IntuneVPNConfigurationPolicyIOS-ConnectionName";
+                    connectionType         = "ciscoAnyConnectV2";
+                    Description            = "IntuneVPNConfigurationPolicyIOS-Example Description";
+                    DisplayName            = "IntuneVPNConfigurationPolicyIOS-Example";
+                    enableSplitTunneling   = $False;
+                    Ensure                 = "Present";
+                    excludedDomains        = @();
+                    excludeList            = @();
+                    Id                     = "ec5432ff-d536-40cb-ba0a-e16260b01382";
+                    optInToDeviceIdSharing = $True;
+                    proxyServer            = @(
+                        MSFT_MicrosoftvpnProxyServer{
+                            port = 80
+                            automaticConfigurationScriptUrl = 'https://www.test.com'
+                            address = 'proxy.test.com'
+                        }
+                    );
+                    safariDomains          = @();
+                    server                 = @(
+                        MSFT_MicrosoftGraphvpnServer{
+                            isDefaultServer = $True
+                            description = 'server'
+                            address = 'vpn.test.com'
+                        }
+                    );
+                    targetedMobileApps     = @();
                 }
                 IntuneWiFiConfigurationPolicyAndroidDeviceAdministrator 'myWifiConfigAndroidDevicePolicy'
                 {

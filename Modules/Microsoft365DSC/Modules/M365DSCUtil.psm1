@@ -6,7 +6,7 @@ $Global:SessionSecurityCompliance = $null
 #region Extraction Modes
 $Global:DefaultComponents = @('SPOApp', 'SPOSiteDesign')
 
-$Global:FullComponents = @('AADGroup', 'AADServicePrincipal', 'ADOSecurityPolicy', 'AzureSubscription','FabricAdminTenantSettings', `
+$Global:FullComponents = @('AADRoleManagementPolicyRule', 'AADGroup', 'AADServicePrincipal', 'ADOSecurityPolicy', 'AzureSubscription','FabricAdminTenantSettings', `
         'DefenderSubscriptionPlan', 'EXOCalendarProcessing', 'EXODistributionGroup', 'EXOMailboxAutoReplyConfiguration', `
         'EXOMailboxPermission','EXOMailboxCalendarFolder','EXOMailboxSettings', 'EXOManagementRole', 'O365Group', 'AADUser', `
         'PlannerPlan', 'PlannerBucket', 'PlannerTask', 'PPPowerAppsEnvironment', 'PPTenantSettings', 'SentinelSetting', 'SentinelWatchlist', `
@@ -628,6 +628,7 @@ function Test-M365DSCParameterState
         [System.Collections.Hashtable]
         $IncludedDrifts
     )
+
     $VerbosePreference = 'SilentlyContinue'
     #region Telemetry
     $data = [System.Collections.Generic.Dictionary[[String], [String]]]::new()
@@ -840,6 +841,14 @@ function Test-M365DSCParameterState
                             {
                                 if ([string]::IsNullOrEmpty($CurrentValues.$fieldName) `
                                         -and [string]::IsNullOrEmpty($DesiredValues.$fieldName))
+                                {
+                                }
+                                # Align line breaks
+                                elseif (-not [string]::IsNullOrEmpty($CurrentValues.$fieldName) `
+                                        -and -not [string]::IsNullOrEmpty($DesiredValues.$fieldName) `
+                                        -and [string]::Equals($CurrentValues.$fieldName.Replace("`r`n", "`n"), `
+                                        $DesiredValues.$fieldName.Replace("`r`n", "`n"), `
+                                        [System.StringComparison]::Ordinal))
                                 {
                                 }
                                 else
@@ -1428,7 +1437,7 @@ function Export-M365DSCConfiguration
     try
     {
         Disconnect-MgGraph -ErrorAction Stop | Out-Null
-        $global:MsCloudLoginConnectionProfile.MicrosoftGraph.Connected = $false
+        Reset-MSCloudLoginConnectionProfileContext -Workload 'MicrosoftGraph'
     }
     catch
     {
@@ -1554,7 +1563,7 @@ function Confirm-M365DSCDependencies
             {
                 $ErrorMessage += '    * ' + $invalidDependency.ModuleName + "`r`n"
             }
-            $ErrorMessage += 'Please run Update-M365DSCDependencies as Administrator.'
+            $ErrorMessage += 'Please run Update-M365DSCDependencies as Administrator. '
             $ErrorMessage += 'Please run Uninstall-M365DSCOutdatedDependencies.'
             $Script:M365DSCDependenciesValidated = $false
             Add-M365DSCEvent -Message $ErrorMessage -EntryType 'Error' `
@@ -4198,13 +4207,20 @@ function Test-M365DSCObjectHasProperty
 
 <#
 .Description
-This function returns the used workloads for the specified DSC resources
+    This function returns the used workloads for the specified DSC resources
 
 .Parameter ResourceNames
-Specifies the resources for which the workloads should be determined.
+    Specifies the resources for which the workloads should be determined.
+    Either a single string, an array of strings or an object with 'Name' and 'AuthenticationMethod' can be provided.
 
 .Example
-Get-M365DSCWorkloadsListFromResourceNames -ResourceNames AADUSer
+    Get-M365DSCWorkloadsListFromResourceNames -ResourceNames AADUser
+
+.EXAMPLE
+    Get-M365DSCWorkloadsListFromResourceNames -ResourceNames @('AADUser', 'AADGroup')
+
+.EXAMPLE
+    Get-M365DSCWorkloadsListFromResourceNames -ResourceNames @{Name = 'AADUser'; AuthenticationMethod = 'Credentials'}
 
 .Functionality
 Public
@@ -4223,7 +4239,13 @@ function Get-M365DSCWorkloadsListFromResourceNames
     [Array] $workloads = @()
     foreach ($resource in $ResourceNames)
     {
-        switch ($resource.Name.Substring(0, 2).ToUpper())
+        $resourceName = $resource.Name
+        $authMethod = $resource.AuthenticationMethod
+        if ([System.String]::IsNullOrEmpty($resourceName))
+        {
+            $resourceName = $resource
+        }
+        switch ($resourceName.Substring(0, 2).ToUpper())
         {
             'AA'
             {
@@ -4231,7 +4253,7 @@ function Get-M365DSCWorkloadsListFromResourceNames
                 {
                     $workloads += @{
                         Name                 = 'MicrosoftGraph'
-                        AuthenticationMethod = $resource.AuthenticationMethod
+                        AuthenticationMethod = $authMethod
                     }
                 }
             }
@@ -4241,7 +4263,7 @@ function Get-M365DSCWorkloadsListFromResourceNames
                 {
                     $workloads += @{
                         Name                 = 'ExchangeOnline'
-                        AuthenticationMethod = $resource.AuthenticationMethod
+                        AuthenticationMethod = $authMethod
                     }
                 }
             }
@@ -4251,7 +4273,7 @@ function Get-M365DSCWorkloadsListFromResourceNames
                 {
                     $workloads += @{
                         Name                 = 'MicrosoftGraph'
-                        AuthenticationMethod = $resource.AuthenticationMethod
+                        AuthenticationMethod = $authMethod
                     }
                 }
             }
@@ -4261,14 +4283,14 @@ function Get-M365DSCWorkloadsListFromResourceNames
                 {
                     $workloads += @{
                         Name                 = 'MicrosoftGraph'
-                        AuthenticationMethod = $resource.AuthenticationMethod
+                        AuthenticationMethod = $authMethod
                     }
                 }
                 elseif (-not $workloads.Name -or -not $workloads.Name.Contains('ExchangeOnline'))
                 {
                     $workloads += @{
                         Name                 = 'ExchangeOnline'
-                        AuthenticationMethod = $resource.AuthenticationMethod
+                        AuthenticationMethod = $authMethod
                     }
                 }
             }
@@ -4278,7 +4300,7 @@ function Get-M365DSCWorkloadsListFromResourceNames
                 {
                     $workloads += @{
                         Name                 = 'PnP'
-                        AuthenticationMethod = $resource.AuthenticationMethod
+                        AuthenticationMethod = $authMethod
                     }
                 }
             }
@@ -4288,7 +4310,7 @@ function Get-M365DSCWorkloadsListFromResourceNames
                 {
                     $workloads += @{
                         Name                 = 'MicrosoftGraph'
-                        AuthenticationMethod = $resource.AuthenticationMethod
+                        AuthenticationMethod = $authMethod
                     }
                 }
             }
@@ -4298,7 +4320,7 @@ function Get-M365DSCWorkloadsListFromResourceNames
                 {
                     $workloads += @{
                         Name                 = 'PnP'
-                        AuthenticationMethod = $resource.AuthenticationMethod
+                        AuthenticationMethod = $authMethod
                     }
                 }
             }
@@ -4308,7 +4330,7 @@ function Get-M365DSCWorkloadsListFromResourceNames
                 {
                     $workloads += @{
                         Name                 = 'SecurityComplianceCenter'
-                        AuthenticationMethod = $resource.AuthenticationMethod
+                        AuthenticationMethod = $authMethod
                     }
                 }
             }
@@ -4318,7 +4340,7 @@ function Get-M365DSCWorkloadsListFromResourceNames
                 {
                     $workloads += @{
                         Name                 = 'MicrosoftTeams'
-                        AuthenticationMethod = $resource.AuthenticationMethod
+                        AuthenticationMethod = $authMethod
                     }
                 }
             }

@@ -59,7 +59,7 @@ function Get-TargetResource
     $nullResult = $PSBoundParameters
     try
     {
-        $uri = $Global:MSCloudLoginConnectionProfile.MicrosoftGraph.ResourceUrl + "beta/onPremisesPublishingProfiles('applicationProxy')"
+        $uri = (Get-MSCloudLoginConnectionProfile -Workload MicrosoftGraph).ResourceUrl + "beta/onPremisesPublishingProfiles('applicationProxy')"
         $instance = Invoke-MgGraphRequest -Uri $uri -Method Get
         if ($null -eq $instance)
         {
@@ -151,7 +151,7 @@ function Set-TargetResource
         isEnabled = $IsEnabled
     }
     $body = ConvertTo-Json $settings
-    $uri = $Global:MSCloudLoginConnectionProfile.MicrosoftGraph.ResourceUrl + "beta/onPremisesPublishingProfiles('applicationProxy')"
+    $uri = (Get-MSCloudLoginConnectionProfile -Workload MicrosoftGraph).ResourceUrl + "beta/onPremisesPublishingProfiles('applicationProxy')"
     Invoke-MgGraphRequest -Uri $uri -Method PATCH -Body $Body | Out-Null
 }
 
@@ -299,16 +299,16 @@ function Export-TargetResource
 
         $Results = Get-TargetResource @Params
         $Results = Update-M365DSCExportAuthenticationResults -ConnectionMode $ConnectionMode `
-                -Results $Results
+            -Results $Results
 
         $currentDSCBlock = Get-M365DSCExportContentForResource -ResourceName $ResourceName `
-                -ConnectionMode $ConnectionMode `
-                -ModulePath $PSScriptRoot `
-                -Results $Results `
-                -Credential $Credential
+            -ConnectionMode $ConnectionMode `
+            -ModulePath $PSScriptRoot `
+            -Results $Results `
+            -Credential $Credential
         $dscContent += $currentDSCBlock
         Save-M365DSCPartialExport -Content $currentDSCBlock `
-                -FileName $Global:PartialExportFileName
+            -FileName $Global:PartialExportFileName
         Write-Host $Global:M365DSCEmojiGreenCheckMark
         return $dscContent
     }

@@ -93,24 +93,24 @@ function Get-TargetResource
         {
             if (-not [System.String]::IsNullOrEmpty($Id))
             {
-                $instance = $Script:exportedInstances | Where-Object -FilterScript {$_.Id -eq $Id}
+                $instance = $Script:exportedInstances | Where-Object -FilterScript { $_.Id -eq $Id }
             }
             if ($null -eq $instance)
             {
-                $instance = $Script:exportedInstances | Where-Object -FilterScript {$_.DisplayName -eq $DisplayName}
+                $instance = $Script:exportedInstances | Where-Object -FilterScript { $_.DisplayName -eq $DisplayName }
             }
         }
         else
         {
-            $uri = $Global:MSCloudLoginConnectionProfile.MicrosoftGraph.ResourceUrl + 'beta/directory/federationConfigurations/microsoft.graph.samlOrWsFedExternalDomainFederation'
+            $uri = (Get-MSCloudLoginConnectionProfile -Workload MicrosoftGraph).ResourceUrl + 'beta/directory/federationConfigurations/microsoft.graph.samlOrWsFedExternalDomainFederation'
             $instances = Invoke-MgGraphRequest $uri -Method Get
             if (-not [System.String]::IsNullOrEmpty($Id))
             {
-                $instance = $instances.value | Where-Object -FilterScript {$_.Id -eq $Id}
+                $instance = $instances.value | Where-Object -FilterScript { $_.Id -eq $Id }
             }
             if ($null -eq $instance)
             {
-                $instance = $instances.value | Where-Object -FilterScript {$_.DisplayName -eq $DisplayName}
+                $instance = $instances.value | Where-Object -FilterScript { $_.DisplayName -eq $DisplayName }
             }
         }
         if ($null -eq $instance)
@@ -237,7 +237,7 @@ function Set-TargetResource
     $currentInstance = Get-TargetResource @PSBoundParameters
 
     $instanceParams = @{
-        "@odata.type"                   = "microsoft.graph.samlOrWsFedExternalDomainFederation"
+        '@odata.type'                   = 'microsoft.graph.samlOrWsFedExternalDomainFederation'
         displayName                     = $DisplayName
         metadataExchangeUri             = $MetadataExchangeUri
         issuerUri                       = $IssuerUri
@@ -249,14 +249,14 @@ function Set-TargetResource
     foreach ($domain in $domains)
     {
         $instanceParams.domains += @{
-            "@odata.type" = "microsoft.graph.externalDomainName"
+            '@odata.type' = 'microsoft.graph.externalDomainName'
             id            = $domain
         }
     }
     # CREATE
     if ($Ensure -eq 'Present' -and $currentInstance.Ensure -eq 'Absent')
     {
-        $uri = $Global:MSCloudLoginConnectionProfile.MicrosoftGraph.ResourceUrl + 'beta/directory/federationConfigurations/microsoft.graph.samlOrWsFedExternalDomainFederation'
+        $uri = (Get-MSCloudLoginConnectionProfile -Workload MicrosoftGraph).ResourceUrl + 'beta/directory/federationConfigurations/microsoft.graph.samlOrWsFedExternalDomainFederation'
         Write-Verbose -Message "Creating federation configuration {$DisplayName}"
         $body = ConvertTo-Json $instanceParams -Depth 10 -Compress
         Invoke-MgGraphRequest -Uri $uri -Method POST -Body $body
@@ -264,7 +264,7 @@ function Set-TargetResource
     # UPDATE
     elseif ($Ensure -eq 'Present' -and $currentInstance.Ensure -eq 'Present')
     {
-        $uri = $Global:MSCloudLoginConnectionProfile.MicrosoftGraph.ResourceUrl + 'beta/directory/federationConfigurations/microsoft.graph.samlOrWsFedExternalDomainFederation/$currentInstance.Id'
+        $uri = (Get-MSCloudLoginConnectionProfile -Workload MicrosoftGraph).ResourceUrl + 'beta/directory/federationConfigurations/microsoft.graph.samlOrWsFedExternalDomainFederation/$currentInstance.Id'
         Write-Verbose -Message "Updating federation configuration {$DisplayName}"
         $body = ConvertTo-Json $instanceParams -Depth 10 -Compress
         Invoke-MgGraphRequest -Uri $uri -Method PATCH -Body $body
@@ -272,7 +272,7 @@ function Set-TargetResource
     # REMOVE
     elseif ($Ensure -eq 'Absent' -and $currentInstance.Ensure -eq 'Present')
     {
-        $uri = $Global:MSCloudLoginConnectionProfile.MicrosoftGraph.ResourceUrl + 'beta/directory/federationConfigurations/microsoft.graph.samlOrWsFedExternalDomainFederation/$currentInstance.Id'
+        $uri = (Get-MSCloudLoginConnectionProfile -Workload MicrosoftGraph).ResourceUrl + 'beta/directory/federationConfigurations/microsoft.graph.samlOrWsFedExternalDomainFederation/$currentInstance.Id'
         Write-Verbose -Message "Removing federation configuration {$DisplayName}"
         Invoke-MgGraphRequest -Uri $uri -Method DELETE
     }
@@ -431,7 +431,7 @@ function Export-TargetResource
     try
     {
         $Script:ExportMode = $true
-        $uri = $Global:MSCloudLoginConnectionProfile.MicrosoftGraph.ResourceUrl + 'beta/directory/federationConfigurations/microsoft.graph.samlOrWsFedExternalDomainFederation'
+        $uri = (Get-MSCloudLoginConnectionProfile -Workload MicrosoftGraph).ResourceUrl + 'beta/directory/federationConfigurations/microsoft.graph.samlOrWsFedExternalDomainFederation'
         [array] $Script:exportedInstances = Invoke-MgGraphRequest $uri -Method Get
 
         $i = 1

@@ -608,7 +608,7 @@ function Compare-M365DSCComplexObject
     {
         if ($Source.Length -ne $Target.Length)
         {
-            Write-Verbose -Message "Configuration drift - The complex array have different number of items: Source {$($Source.Length)} Target {$($Target.Length)}"
+            Write-Verbose -Message "Configuration drift - The complex array have different number of items: Source {$($Source.Length)}, Target {$($Target.Length)}"
             return $false
         }
         if ($Source.Length -eq 0)
@@ -627,7 +627,9 @@ function Compare-M365DSCComplexObject
 
             if (-not $compareResult)
             {
-                Write-Verbose -Message "Configuration drift - Intune Policy Assignment: $key Source {$Source} Target {$Target}"
+                Write-Verbose -Message "Configuration drift - Intune Policy Assignment: $key"
+                Write-Verbose -Message "Source {$Source}"
+                Write-Verbose -Message "Target {$Target}"
                 return $false
             }
 
@@ -724,7 +726,9 @@ function Compare-M365DSCComplexObject
                 $targetValue = 'null'
             }
 
-            Write-Verbose -Message "Configuration drift - key: $key Source {$sourceValue} Target {$targetValue}"
+            Write-Verbose -Message "Configuration drift - key: $key"
+            Write-Verbose -Message "Source {$sourceValue}"
+            Write-Verbose -Message "Target {$targetValue}"
             return $false
         }
 
@@ -753,7 +757,9 @@ function Compare-M365DSCComplexObject
 
                 if (-not $compareResult)
                 {
-                    Write-Verbose -Message "Configuration drift - complex object key: $key Source {$sourceValue} Target {$targetValue}"
+                    Write-Verbose -Message "Configuration drift - complex object key: $key"
+                    Write-Verbose -Message "Source {$sourceValue}"
+                    Write-Verbose -Message "Target {$targetValue}"
                     return $false
                 }
             }
@@ -774,6 +780,26 @@ function Compare-M365DSCComplexObject
                         $compareResult = $null
                     }
                 }
+                elseif ($targetType -eq 'String')
+                {
+                    # Align line breaks
+                    if (-not [System.String]::IsNullOrEmpty($referenceObject))
+                    {
+                        $referenceObject = $referenceObject.Replace("`r`n", "`n")
+                    }
+
+                    if (-not [System.String]::IsNullOrEmpty($differenceObject))
+                    {
+                        $differenceObject = $differenceObject.Replace("`r`n", "`n")
+                    }
+
+                    $compareResult = $true
+                    $ordinalComparison = [System.String]::Equals($referenceObject, $differenceObject, [System.StringComparison]::Ordinal)
+                    if ($ordinalComparison)
+                    {
+                        $compareResult = $null
+                    }
+                }
                 else
                 {
                     $compareResult = Compare-Object `
@@ -783,7 +809,9 @@ function Compare-M365DSCComplexObject
 
                 if ($null -ne $compareResult)
                 {
-                    Write-Verbose -Message "Configuration drift - simple object key: $key Source {$sourceValue} Target {$targetValue}"
+                    Write-Verbose -Message "Configuration drift - simple object key: $key"
+                    Write-Verbose -Message "Source {$sourceValue}"
+                    Write-Verbose -Message "Target {$targetValue}"
                     return $false
                 }
             }
@@ -803,7 +831,11 @@ function Convert-M365DSCDRGComplexTypeToHashtable
 
         [Parameter()]
         [switch]
-        $SingleLevel
+        $SingleLevel,
+
+        [Parameter()]
+        [switch]
+        $ExcludeUnchangedProperties
     )
 
     if ($null -eq $ComplexObject)
@@ -826,6 +858,24 @@ function Convert-M365DSCDRGComplexTypeToHashtable
         #However, an array can be preserved on return by prepending it with the array construction operator (,)
         return , [hashtable[]]$results
     }
+
+    if ($SingleLevel)
+    {
+        $returnObject = @{}
+        $keys = $ComplexObject.CimInstanceProperties | Where-Object -FilterScript { $_.Name -ne 'PSComputerName' }
+        foreach ($key in $keys)
+        {
+            if ($ExcludeUnchangedProperties -and -not $key.IsValueModified)
+            {
+                continue
+            }
+            $propertyName = $key.Name[0].ToString().ToLower() + $key.Name.Substring(1, $key.Name.Length - 1)
+            $propertyValue = $ComplexObject.$($key.Name)
+            $returnObject.Add($propertyName, $propertyValue)
+        }
+        return [hashtable]$returnObject
+    }
+
     $hashComplexObject = Get-M365DSCDRGComplexTypeToHashtable -ComplexObject $ComplexObject
 
     if ($null -ne $hashComplexObject)
@@ -1628,8 +1678,8 @@ function Get-IntuneSettingCatalogPolicySetting
             $userSettingTemplates = $SettingTemplates | Where-object -FilterScript {
                 $_.SettingInstanceTemplate.SettingDefinitionId.StartsWith("user_")
             }
-            $deviceDscParams = Convert-M365DSCDRGComplexTypeToHashtable -ComplexObject $DSCParams.DeviceSettings -SingleLevel
-            $userDscParams = Convert-M365DSCDRGComplexTypeToHashtable -ComplexObject $DSCParams.UserSettings -SingleLevel
+            $deviceDscParams = Convert-M365DSCDRGComplexTypeToHashtable -ComplexObject $DSCParams.DeviceSettings -SingleLevel -ExcludeUnchangedProperties
+            $userDscParams = Convert-M365DSCDRGComplexTypeToHashtable -ComplexObject $DSCParams.UserSettings -SingleLevel -ExcludeUnchangedProperties
             $combinedSettingInstances = @()
             $combinedSettingInstances += Get-IntuneSettingCatalogPolicySetting -DSCParams $deviceDscParams -SettingTemplates $deviceSettingTemplates
             $combinedSettingInstances += Get-IntuneSettingCatalogPolicySetting -DSCParams $userDscParams -SettingTemplates $userSettingTemplates
@@ -1664,8 +1714,8 @@ function Get-IntuneSettingCatalogPolicySetting
         }
         $settingValueName = $settingType.Replace('#microsoft.graph.deviceManagementConfiguration', '').Replace('Instance', 'Value')
         $settingValueName = $settingValueName.Substring(0, 1).ToLower() + $settingValueName.Substring(1, $settingValueName.length - 1 )
-        $settingValueType = $settingInstanceTemplate.AdditionalProperties."$($settingValueName)Template".'@odata.type'
-        if ($null -ne $settingValueType)
+        [string]$settingValueType = $settingInstanceTemplate.AdditionalProperties."$($settingValueName)Template".'@odata.type'
+        if (-not [System.String]::IsNullOrEmpty($settingValueType))
         {
             $settingValueType = $settingValueType.Replace('ValueTemplate', 'Value')
         }
@@ -1810,7 +1860,7 @@ function Get-IntuneSettingCatalogPolicySettingInstanceValue
                 $DSCParams = @{
                     $cimDSCParamsName = if ($instanceCount -eq 1) { $newDSCParams.$cimDSCParamsName[0] } else { $newDSCParams.$cimDSCParamsName }
                 }
-                $AllSettingDefinitions = $groupSettingCollectionDefinitionChildren
+                $AllSettingDefinitions = $groupSettingCollectionDefinitionChildren + $SettingDefinition
             }
 
             for ($i = 0; $i -lt $instanceCount; $i++)
@@ -1981,6 +2031,10 @@ function Get-IntuneSettingCatalogPolicySettingInstanceValue
                     if (-not [string]::IsNullOrEmpty($childSettingInstanceTemplate.settingInstanceTemplateId))
                     {
                         $childSettingValue.Add('settingInstanceTemplateReference', @{'settingInstanceTemplateId' = $childSettingInstanceTemplate.settingInstanceTemplateId })
+                    }
+                    if ($childSettingType -eq '#microsoft.graph.deviceManagementConfigurationSettingGroupCollectionInstance')
+                    {
+                        $childSettingType = '#microsoft.graph.deviceManagementConfigurationGroupSettingCollectionInstance'
                     }
                     $childSettingValue.Add('@odata.type', $childSettingType)
                     $choiceSettingValueChildren += $childSettingValue
@@ -2321,7 +2375,15 @@ function Export-IntuneSettingCatalogPolicySettings
     {
         '#microsoft.graph.deviceManagementConfigurationSimpleSettingInstance'
         {
-            $settingValue = if ($IsRoot) { $SettingInstance.AdditionalProperties.simpleSettingValue.value } else { $SettingInstance.simpleSettingValue.value }
+            $simpleSetting = if ($IsRoot) { $SettingInstance.AdditionalProperties.simpleSettingValue } else { $SettingInstance.simpleSettingValue }
+            if ($simpleSetting.'@odata.type' -eq '#microsoft.graph.deviceManagementConfigurationIntegerSettingValue')
+            {
+                $settingValue = [int]$simpleSetting.value
+            }
+            else
+            {
+                $settingValue = $simpleSetting.value
+            }
         }
         '#microsoft.graph.deviceManagementConfigurationChoiceSettingInstance'
         {
@@ -2411,16 +2473,30 @@ function Export-IntuneSettingCatalogPolicySettings
         '#microsoft.graph.deviceManagementConfigurationSimpleSettingCollectionInstance'
         {
             $values = @()
-            $childValues = if ($IsRoot) { $SettingInstance.AdditionalProperties.simpleSettingCollectionValue.value } else { $SettingInstance.simpleSettingCollectionValue.value }
+            $childValues = if ($IsRoot) { $SettingInstance.AdditionalProperties.simpleSettingCollectionValue } else { $SettingInstance.simpleSettingCollectionValue }
             foreach ($value in $childValues)
             {
-                $values += $value
+                if ($value.'@odata.type' -eq '#microsoft.graph.deviceManagementConfigurationIntegerSettingValue')
+                {
+                    $values += [int]$value.value
+                }
+                else
+                {
+                    $values += $value.value
+                }
             }
             $settingValue = $values
         }
         Default
         {
-            $settingValue = $SettingInstance.value
+            if ($SettingInstance.'@odata.type' -eq '#microsoft.graph.deviceManagementConfigurationIntegerSettingValue')
+            {
+                $settingValue += [int]$SettingInstance.value
+            }
+            else
+            {
+                $settingValue = $SettingInstance.value
+            }
         }
     }
 
@@ -2475,7 +2551,7 @@ function Update-IntuneDeviceConfigurationPolicy
 
     try
     {
-        $Uri = $Global:MSCloudLoginConnectionProfile.MicrosoftGraph.ResourceUrl + "beta/deviceManagement/configurationPolicies/$DeviceConfigurationPolicyId"
+        $Uri = (Get-MSCloudLoginConnectionProfile -Workload MicrosoftGraph).ResourceUrl + "beta/deviceManagement/configurationPolicies/$DeviceConfigurationPolicyId"
 
         $policy = @{
             'name'              = $Name

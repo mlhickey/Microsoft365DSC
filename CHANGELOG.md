@@ -2,6 +2,124 @@
 
 # UNRELEASED
 
+# 1.25.108.1
+
+* AADAuthenticationRequirement
+  * Changed Export logic to extract instances from all users.
+* AADOrganizationCertificateBasedAuthConfiguration
+  * Fixed the primary key of the resource.
+    FIXES [#5523](https://github.com/microsoft/Microsoft365DSC/issues/5523)
+* AADRoleEligibilityScheduleRequest
+  * Fixed error when extracting an entry with a deleted principal.
+* DefenderDeviceAuthenticatedScanDefinition
+  * Fixed the Data Type export.
+* MISC
+  * Added check to `New-M365DSCReportFromConfiguration` to make sure Windows
+    Remoting is enabled, which is required to convert the DSC config.
+  * Defender
+    * Added support for the UseBasicParsing parameter for REST calls.
+
+# 1.24.1218.1
+
+* AADApplication
+  * Added support for Oauth2PermissionScopes.
+  * Fixes comparison issue for permissions.
+* EXOTransportRule
+  * Fixes issue extracting arrays in Get-TargetResource.
+    * FIXES [#5575](https://github.com/microsoft/Microsoft365DSC/issues/5575)
+* TeamsMeetingPolicy
+  * Adds support for additional Copilot setting value.
+    * FIXES [#5573](https://github.com/microsoft/Microsoft365DSC/issues/5573)
+  * FIXES [#5550](https://github.com/microsoft/Microsoft365DSC/issues/5550)
+* MISC
+  * Fixed the Fabric web request to use basic parsing.
+  * Reset only necessary authentication context.
+* M365DSCUtil
+  * Update `Get-M365DSCWorkloadsListFromResourceNames` function for more input types.
+    FIXES [#5525](https://github.com/microsoft/Microsoft365DSC/issues/5525)
+* DEPENDENCIES
+  * Updated Microsoft.PowerApps.Administration.PowerShell to version 2.0.202.
+  * Updated MSCloudLoginAssistant to version 1.1.31.
+
+# 1.24.1211.1
+
+* AADApplication
+  * Changed logic to remove all permissions when an empty array is specified.
+    FIXES [#5534](https://github.com/microsoft/Microsoft365DSC/issues/5534)
+  * Changed logic to update AppRoles by first disabling the entry.
+    FIXES [#5524](https://github.com/microsoft/Microsoft365DSC/issues/5524)
+* AADFeatureRolloutPolicy
+  * Fixed policy retrieval
+    FIXES [#5521](https://github.com/microsoft/Microsoft365DSC/issues/5521)
+* AADRoleEligibilityScheduleRequest
+  * Changed logic to retrieve instance by Service Principal with custom role.
+    FIXES [#5532](https://github.com/microsoft/Microsoft365DSC/issues/5532)
+* IntuneDeviceManagementAndroidDeviceOwnerEnrollmentProfile
+  * Fixing issue with the way the QrCodeImage property was exported and handled.
+* IntuneFirewallPolicyWindows10
+  * Fix export of properties that appear multiple times in subsections.
+* IntuneSecurityBaselineWindows10
+  * Initial release.
+* M365DSCDRGUtil
+  * Improve settings catalog handling for nested objects.
+* M365DSCResourceGenerator
+  * Fixes an issue with nested object creation.
+* MISC
+  * Migrate `MSCloudLoginAssistant` authentication context access to cmdlets.
+* DEPENDENCIES
+  * Updated MSCloudLoginAssistant to version 1.1.29.
+
+# 1.24.1204.1
+
+* All resources
+  * Applying project default formatting on all files, to improve
+    reading and troubleshooting.
+* AADAccessReviewDefinition
+  * Added support for #microsoft.graph.accessReviewInactiveUsersQueryScope in odatatype.
+* AADActivityBasedTimeoutPolicy
+  * Added support for AccessTokens.
+* AADClaimsMappingPolicy
+  * Fixed policy retrieval
+    FIXES [#5505](https://github.com/microsoft/Microsoft365DSC/issues/5505)
+* AADIdentityAPIConnector
+  * Changed the export logic to export passwords as credential objects instead of string.
+* AADRoleManagementPolicyRule
+  * Added the logic to handle filters in the Export logic flow.
+* EXOAuthenticationPolicyAssignment
+  * Added $confirm flag to the Set-TargetResource function for PowerShell 7 compatibility.
+* EXOClientAccessRule
+  * Added $confirm flag to the Set-TargetResource function for PowerShell 7 compatibility.
+* EXOManagementRoleAssignment
+  * Changed logic to detect drift.
+* EXOServicePrincipal
+  * Removed ObjectID from the return of the Get-TargetResource method.
+* EXOTeamsProtectionPolicy
+  * Initial release
+    FIXES [#5296](https://github.com/microsoft/Microsoft365DSC/issues/5296)
+* EXOTransportRule
+  * Fixed conditional logic for creation and update.
+* PPPowerAppsEnvironmant
+  * Fixed [[#5508](https://github.com/microsoft/Microsoft365DSC/issues/5508)]
+* IntuneTrustedRootCertificateIOS
+  * Initial release
+* IntuneVPNConfigurationPolicyAndroidDeviceOwner
+  * Initial release
+* IntuneVPNConfigurationPolicyAndroidEnterprise
+  * Initial release
+* IntuneVPNConfigurationPolicyIOS
+  * Initial release.
+* M365DSCRuleEvaluation
+  * Only attempt to pass AccessTokens if specified.
+* SPORetentionLabelsSettings
+  * Initial release.
+* MISC
+  * M365DSCDRGUtil
+    * Add separate check for strings with ordinal comparison and standardized line breaks.
+  * M365DSCReport
+    * Add support for creating report in CSV-format
+
+# 1.24.1127.1
+
 * AAD
   * Added ApplicationSecret auth method to multiple resources
 * AADFilteringPolicyRule
@@ -16,18 +134,29 @@
 * EXOPlace
   * Changed how empty arrays are returned.
 * EXORecipientPermission
-  * Added logic to update an existing recipient's permissions.
+  * Added logic to update an existing recipients permissions.
 * EXOTransportRule
   * Changed how empty arrays are returned.
+* INTUNE
+  * Add parameter `-All` to Graph requests to fetch all policies on Get.
 * IntuneAndroidManagedStoreAppConfiguration
   * Initial release.
 * IntuneAppConfigurationPolicy
-  * Fixes an issue where assignment wasn't properly set if the
+  * Fixes an issue where assignment was not properly set if the
     groupId was null.
     FIXES [#5430](https://github.com/microsoft/Microsoft365DSC/issues/5430)
+* IntuneMobileAppConfigurationPolicyIOS
+  * Removing resource. Already possible with IntuneAppConfigurationDevicePolicy
+* IntuneMobileThreatDefenseConnector
+  * Fixes a NotFound error when the resource does not exist and remove
+    `LastHeartbeatDateTime` from comparison.
 * IntuneRoleAssignment
   * Improve verbose output and fix copy-pasted variables.
 * IntuneRoleScopeTag
+  * Initial release.
+* IntuneTrustedRootCertificateAndroidDeviceOwner
+  * Initial release.
+* IntuneTrustedRootCertificateAndroidEnterprise
   * Initial release.
 * TeamsUserPolicyAssignment
   * Added support for the Global policies.
@@ -99,7 +228,7 @@
 * AADRoleEligibilityScheduleRequest
   * Adds support for custom role assignments at app scope.
 * AADRoleSettings
-  * Fixing issue where the ActivateApprover parameter isn't processed correctly
+  * Fixing issue where the ActivateApprover parameter is not processed correctly
     when an approver does not exist.
     FIXES [#5423](https://github.com/microsoft/Microsoft365DSC/issues/5423)
     FIXES [#5415](https://github.com/microsoft/Microsoft365DSC/issues/5415)
@@ -326,7 +455,7 @@
     selected
   * Fixed retrieval of resource when it cannot be found by `Id`
   * Added a few verbose messages
-* IntuneDeviceManagmentAndroidDeviceOwnerEnrollmentProfile
+* IntuneDeviceManagementAndroidDeviceOwnerEnrollmentProfile
   * Initial release.
 * IntuneEndpointDetectionAndResponsePolicyWindows10
   * Fixes an issue with `AutoFromConnector` as the Configuration package type.

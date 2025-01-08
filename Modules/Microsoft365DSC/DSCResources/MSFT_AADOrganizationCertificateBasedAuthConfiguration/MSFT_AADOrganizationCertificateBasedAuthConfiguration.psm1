@@ -9,7 +9,7 @@ function Get-TargetResource
         [Microsoft.Management.Infrastructure.CimInstance[]]
         $CertificateAuthorities,
 
-        [Parameter()]
+        [Parameter(Mandatory = $true)]
         [System.String]
         $OrganizationId,
         #endregion
@@ -72,10 +72,10 @@ function Get-TargetResource
         #region resource generator code
 
         # This GUID is ALWAYS fixed as per the documentation.
-        $CertificateBasedAuthConfigurationId = "29728ade-6ae4-4ee9-9103-412912537da5"
+        $CertificateBasedAuthConfigurationId = '29728ade-6ae4-4ee9-9103-412912537da5'
         $getValue = Get-MgBetaOrganizationCertificateBasedAuthConfiguration `
             -CertificateBasedAuthConfigurationId $CertificateBasedAuthConfigurationId `
-            -OrganizationId $OrganizationId  -ErrorAction SilentlyContinue
+            -OrganizationId $OrganizationId -ErrorAction SilentlyContinue
 
         #endregion
         if ($null -eq $getValue)
@@ -96,7 +96,7 @@ function Get-TargetResource
             $myCertificateAuthorities.Add('CertificateRevocationListUrl', $currentCertificateAuthorities.certificateRevocationListUrl)
             $myCertificateAuthorities.Add('DeltaCertificateRevocationListUrl', $currentCertificateAuthorities.deltaCertificateRevocationListUrl)
             $myCertificateAuthorities.Add('IsRootAuthority', $currentCertificateAuthorities.isRootAuthority)
-            if ($myCertificateAuthorities.values.Where({$null -ne $_}).Count -gt 0)
+            if ($myCertificateAuthorities.values.Where({ $null -ne $_ }).Count -gt 0)
             {
                 $complexCertificateAuthorities += $myCertificateAuthorities
             }
@@ -141,7 +141,7 @@ function Set-TargetResource
         [Microsoft.Management.Infrastructure.CimInstance[]]
         $CertificateAuthorities,
 
-        [Parameter()]
+        [Parameter(Mandatory = $true)]
         [System.String]
         $OrganizationId,
         #endregion
@@ -197,11 +197,11 @@ function Set-TargetResource
     $BoundParameters = Remove-M365DSCAuthenticationParameter -BoundParameters $PSBoundParameters
 
     # This GUID is ALWAYS fixed as per the documentation.
-    $CertificateBasedAuthConfigurationId = "29728ade-6ae4-4ee9-9103-412912537da5"
+    $CertificateBasedAuthConfigurationId = '29728ade-6ae4-4ee9-9103-412912537da5'
 
     # Delete the old configuration
-    Write-Verbose -Message "Removing the current Azure AD Organization Certificate Based Auth Configuration."
-    Invoke-MgGraphRequest -Uri ($Global:MSCloudLoginConnectionProfile.MicrosoftGraph.ResourceUrl + "beta/organization/$OrganizationId/certificateBasedAuthConfiguration/$CertificateBasedAuthConfigurationId") -Method DELETE
+    Write-Verbose -Message 'Removing the current Azure AD Organization Certificate Based Auth Configuration.'
+    Invoke-MgGraphRequest -Uri ((Get-MSCloudLoginConnectionProfile -Workload MicrosoftGraph).ResourceUrl + "beta/organization/$OrganizationId/certificateBasedAuthConfiguration/$CertificateBasedAuthConfigurationId") -Method DELETE
 
     if ($Ensure -eq 'Present')
     {
@@ -215,17 +215,23 @@ function Set-TargetResource
         foreach ($CertificateAuthority in $CertificateAuthorities)
         {
             $createCertAuthorities += @{
-                certificate = $CertificateAuthority.Certificate
-                certificateRevocationListUrl = $CertificateAuthority.CertificateRevocationListUrl
+                certificate                       = $CertificateAuthority.Certificate
+                certificateRevocationListUrl      = $CertificateAuthority.CertificateRevocationListUrl
                 deltaCertificateRevocationListUrl = $CertificateAuthority.DeltaCertificateRevocationListUrl
-                isRootAuthority = $CertificateAuthority.IsRootAuthority
+                isRootAuthority                   = $CertificateAuthority.IsRootAuthority
             }
         }
         $params = @{
             certificateAuthorities = $createCertAuthorities
         }
 
-        $policy = Invoke-MgGraphRequest -Uri ($Global:MSCloudLoginConnectionProfile.MicrosoftGraph.ResourceUrl + "beta/organization/$OrganizationId/certificateBasedAuthConfiguration/") -Method POST -Body $params
+        $uri = ((Get-MSCloudLoginConnectionProfile -Workload MicrosoftGraph).ResourceUrl + `
+                    "beta/organization/$OrganizationId/certificateBasedAuthConfiguration/")
+
+        Write-Verbose -Message "Creating with Parameters:`r`n$(ConvertTo-Json $params -Depth 10)"
+        Invoke-MgGraphRequest -Uri $uri `
+                              -Method 'POST' `
+                              -Body $params
     }
 }
 
@@ -240,7 +246,7 @@ function Test-TargetResource
         [Microsoft.Management.Infrastructure.CimInstance[]]
         $CertificateAuthorities,
 
-        [Parameter()]
+        [Parameter(Mandatory = $true)]
         [System.String]
         $OrganizationId,
         #endregion
@@ -292,7 +298,7 @@ function Test-TargetResource
     #endregion
 
     # This GUID is ALWAYS fixed as per the documentation.
-    $CertificateBasedAuthConfigurationId = "29728ade-6ae4-4ee9-9103-412912537da5"
+    $CertificateBasedAuthConfigurationId = '29728ade-6ae4-4ee9-9103-412912537da5'
 
     Write-Verbose -Message "Testing configuration of the Azure AD Organization Certificate Based Auth Configuration with Id {$CertificateBasedAuthConfigurationId}"
 
@@ -402,7 +408,7 @@ function Export-TargetResource
     try
     {
         # This GUID is ALWAYS fixed as per the documentation.
-        $CertificateBasedAuthConfigurationId = "29728ade-6ae4-4ee9-9103-412912537da5"
+        $CertificateBasedAuthConfigurationId = '29728ade-6ae4-4ee9-9103-412912537da5'
         $getValue = Get-MgBetaOrganization
 
         $i = 1
@@ -417,18 +423,22 @@ function Export-TargetResource
         }
         foreach ($config in $getValue)
         {
+            if ($null -ne $Global:M365DSCExportResourceInstancesCount)
+            {
+                $Global:M365DSCExportResourceInstancesCount++
+            }
             $displayedKey = "CertificateBasedAuthConfigurations for $($getValue.DisplayName)"
             Write-Host "    |---[$i/$($getValue.Count)] $displayedKey" -NoNewline
             $params = @{
-                Ensure = 'Present'
-                OrganizationId = $getValue.Id
-                Credential = $Credential
-                ApplicationId = $ApplicationId
-                TenantId = $TenantId
-                ApplicationSecret = $ApplicationSecret
+                Ensure                = 'Present'
+                OrganizationId        = $getValue.Id
+                Credential            = $Credential
+                ApplicationId         = $ApplicationId
+                TenantId              = $TenantId
+                ApplicationSecret     = $ApplicationSecret
                 CertificateThumbprint = $CertificateThumbprint
-                ManagedIdentity = $ManagedIdentity.IsPresent
-                AccessTokens = $AccessTokens
+                ManagedIdentity       = $ManagedIdentity.IsPresent
+                AccessTokens          = $AccessTokens
             }
 
             $Results = Get-TargetResource @Params
@@ -456,7 +466,7 @@ function Export-TargetResource
                 -Credential $Credential
             if ($Results.CertificateAuthorities)
             {
-                $currentDSCBlock = Convert-DSCStringParamToVariable -DSCBlock $currentDSCBlock -ParameterName "CertificateAuthorities" -IsCIMArray:$True
+                $currentDSCBlock = Convert-DSCStringParamToVariable -DSCBlock $currentDSCBlock -ParameterName 'CertificateAuthorities' -IsCIMArray:$True
             }
 
             $dscContent += $currentDSCBlock
