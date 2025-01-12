@@ -71,9 +71,15 @@ function Get-TargetResource
         {
             throw "Could not retrieve the Forwarding Policy with name: $Name"
         }
-
-        $complexPolicyRules = Get-MicrosoftGraphNetworkAccessForwardingPolicyRules -PolicyRules $instance.PolicyRules
-
+        # mlh - don't try to eval empty policy set
+        if ($instance.PolicyRules.Count -gt 0)
+        {
+            $complexPolicyRules = Get-MicrosoftGraphNetworkAccessForwardingPolicyRules -PolicyRules $instance.PolicyRules
+        }
+        else
+        {
+            $complexPolicyRules = @()
+        }
         $results = @{
             Name                  = $instance.name
             PolicyRules           = $complexPolicyRules

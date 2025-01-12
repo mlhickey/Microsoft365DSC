@@ -155,7 +155,8 @@
         }
 
         $schedules = Get-MgBetaRoleManagementDirectoryRoleEligibilitySchedule -Filter "PrincipalId eq '$($request.PrincipalId)'"
-        $schedule = $schedules | Where-Object -FilterScript { $_.RoleDefinitionId -eq $RoleDefinitionId }
+        # mlh - include DirectoryScopeId (seems to be ignored in filter request).  Need to address since roleDefinitionId is shared between directory and AU scopes
+        $schedule = $schedules | Where-Object -FilterScript { $_.RoleDefinitionId -eq $RoleDefinitionId -and $_.DirectoryScopeId -eq "$($DirectoryScopeId)" }
         if ($null -eq $schedule)
         {
             foreach ($instance in $schedules)
@@ -747,8 +748,18 @@ function Export-TargetResource
 
             # Find the Principal Type
             $principalType = 'User'
-            $userInfo = Get-MgUser -UserId $request.PrincipalId -ErrorAction SilentlyContinue
-
+            #$userInfo = Get-MgUser -UserId $request.PrincipalId -ErrorAction SilentlyContinue
+            $userInfo = Get-MgDirectoryObjectById -Ids $request.PrincipalId
+            $principalType = $userInfo.AdditionalProperties['@odata.type'].Split('.')[2]
+            $PrincipalValue = if ($principalType -eq 'user' )
+            {
+                $userInfo.AdditionalProperties['userPrincipalName]'] 
+            }
+            else
+            {
+                $userInfo.AdditionalProperties['displayName'] 
+            }
+            <#
             if ($null -eq $userInfo)
             {
                 $principalType = 'Group'
@@ -775,7 +786,7 @@ function Export-TargetResource
             {
                 $PrincipalValue = $userInfo.UserPrincipalName
             }
-
+            #>
             if ($null -ne $PrincipalValue)
             {
                 $RoleDefinitionId = Get-MgBetaRoleManagementDirectoryRoleDefinition -UnifiedRoleDefinitionId $request.RoleDefinitionId

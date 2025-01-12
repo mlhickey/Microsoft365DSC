@@ -188,7 +188,7 @@ function Get-TargetResource
             {
                 try
                 {
-                    $user = Get-MgUser -UserId $sponsor -ErrorAction Stop
+                    $user = Get-MgUser -UserId $sponsor
                     $ExternalSponsorsValues += $user.UserPrincipalName
                 }
                 catch
@@ -209,7 +209,7 @@ function Get-TargetResource
             {
                 try
                 {
-                    $user = Get-MgUser -UserId $sponsor -ErrorAction Stop
+                    $user = Get-MgUser -UserId $sponsor
                     $InternalSponsorsValues += $user.UserPrincipalName
                 }
                 catch
@@ -222,11 +222,19 @@ function Get-TargetResource
                 $InternalSponsorsValues += $sponsor
             }
         }
+        $DisplayName = if (-not [string]::IsNullOrEmpty($config.displayName))
+        {
+            $config.displayName
+        }
+        else
+        {
+            $config.Id
+        }
 
         $results = @{
             Id                    = $getValue.id
             Description           = $getValue.description
-            DisplayName           = $getValue.displayName ?? $getValue.id
+            DisplayName           = $DisplayName
             ExternalSponsors      = $ExternalSponsorsValues
             IdentitySources       = $getIdentitySources
             InternalSponsors      = $InternalSponsorsValues
@@ -785,7 +793,14 @@ function Export-TargetResource
             {
                 $Global:M365DSCExportResourceInstancesCount++
             }
-
+            $DisplayName = if (-not [string]::IsNullOrEmpty($config.displayName))
+            {
+                $config.displayName
+            }
+            else
+            {
+                $config.Id
+            }
             $displayedKey = $config.id
             if (-not [String]::IsNullOrEmpty($config.displayName))
             {
@@ -794,7 +809,7 @@ function Export-TargetResource
             Write-Host "    |---[$i/$($getValue.Count)] $displayedKey" -NoNewline
             $params = @{
                 id                    = $config.id
-                DisplayName           = $displayedKey
+                DisplayName           = $DisplayName
                 Ensure                = 'Present'
                 Credential            = $Credential
                 ApplicationId         = $ApplicationId

@@ -123,8 +123,9 @@ function Get-TargetResource
                 {
                     $complexRules = $null
                 }
-                $complexAuthenticationModeConfiguration.Add('Rules', $complexRules)
             }
+            # mlh - move outside of loop to avoid dup add error
+            $complexAuthenticationModeConfiguration.Add('Rules', $complexRules)
         }
         else
         {

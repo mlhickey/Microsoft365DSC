@@ -92,8 +92,8 @@ function Get-TargetResource
         {
             $getValue = Get-MgBetaRoleManagementEntitlementManagementRoleAssignment -UnifiedRoleAssignmentId $Id
         }
-
-        $user = Get-MgUser -UserId $Principal
+        # mlh
+        $user = Get-MgDirectoryObjectById -Ids $Principal
         $roleInfo = Get-MgBetaRoleManagementEntitlementManagementRoleDefinition -Filter "DisplayName eq '$RoleDefinition'"
 
         if ($null -eq $getValue)
@@ -130,9 +130,9 @@ function Get-TargetResource
 
         $results = @{
             Id                    = $getValue.Id
-            Principal             = $user.UserPrincipalName
+            Principal             = $user.Id
             RoleDefinition        = $roleInfo.DisplayName
-            DisplayName           = $getValue.DisplayName
+            DisplayName           = $user.AdditionalProperties.displayName
             AppScopeId            = $getValue.AppScopeId
             DirectoryScopeId      = $getValue.DirectoryScopeId
             Ensure                = 'Present'
@@ -254,7 +254,7 @@ function Set-TargetResource
     $PSBoundParameters.Remove('AccessTokens') | Out-Null
 
     $setParameters = ([Hashtable]$PSBoundParameters).clone()
-    $userInfo = Get-MgUser -UserId $Principal
+    $userInfo = Get-MgDirectoryObjectById -Ids $Principal
     $roleInfo = Get-MgBetaRoleManagementEntitlementManagementRoleDefinition -Filter "DisplayName eq '$RoleDefinition'"
     $setParameters.Add('PrincipalId', $userInfo.Id)
     $setParameters.Add('RoleDefinitionId', $roleInfo.Id)
@@ -432,7 +432,9 @@ function Export-TargetResource
     {
 
         #region resource generator code
+        # mlh - use ExpandProperty to reduce calls
         [array]$getValue = Get-MgBetaRoleManagementEntitlementManagementRoleAssignment `
+            -ExpandProperty RoleDefinition `
             -All `
             -ErrorAction Stop
 
@@ -460,7 +462,7 @@ function Export-TargetResource
                 $displayedKey = $config.displayName
             }
             Write-Host "    |---[$i/$($getValue.Count)] $displayedKey" -NoNewline
-            $roleInfo = Get-MgBetaRoleManagementEntitlementManagementRoleDefinition -UnifiedRoleDefinitionId $config.RoleDefinitionId
+            $roleInfo = $config.RoleDefinition
             $params = @{
                 Id                    = $config.Id
                 Principal             = $config.PrincipalId
